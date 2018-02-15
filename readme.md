@@ -6,7 +6,7 @@ A tool to classify lake free surface DO observations
 
 A manual to come soon.
 
-Check out the web based version for now: http://kmuraoka.com/DOClassifier/ 
+Web based version is usable from: http://kmuraoka.com/DOClassifier/ 
 
 ### Prerequisites
 
