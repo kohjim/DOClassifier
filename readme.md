@@ -22,7 +22,9 @@ To be updated
 
 ## Example
 
-To be updated with example doobs file
+To be updated
+
+Example doobs file (Mendota) in the example_doobs folder
 
 ## Versioning
 
