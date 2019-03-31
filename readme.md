@@ -20,16 +20,23 @@ Executing “export LD_LIBRARY_PATH=/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/am
 
 #### With GUI
 
-Download the contents of src folder.
-(1) In R, set the "src" folder as the working dir using setwd("").
-(2) type source("RunDOClassifier.R")
-(3) type RunDOClassifier
-(4) "upload" .doobs file and save the results through "download"
+(1) Download the contents of src folder.
+
+(2) In R, set the "src" folder as the working dir using setwd("").
+
+(3) type source("RunDOClassifier.R")
+
+(4) type RunDOClassifier
+
+(5) "upload" .doobs file and save the results through "download"
 
 #### Without GUI
-Download the contents of src folder.
-(1) In R, set the "main" folder as the working dir using setwd("").
-(2) follow the code in "example_without_GUI.R"
+
+(1) Download the contents of src folder.
+
+(2) In R, set the "main" folder as the working dir using setwd("").
+
+(3) follow the code in "example_without_GUI.R"
 
 ## Example
 
