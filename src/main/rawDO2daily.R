@@ -90,5 +90,5 @@ rawDO2daily <- function(doobsFile){
     )
   
   # return
-  return(list(Dates <- ts.uniqueDates, DF.matrix <- newMat))
+  return(list(Dates <- as.data.frame(as.POSIXct(ts.uniqueDates, origin = '1970-01-01 00:00.00 UTC')), DF.matrix <- newMat))
 }

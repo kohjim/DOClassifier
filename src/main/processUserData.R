@@ -65,7 +65,7 @@ processUserData <-
     }
     options(warn = oldw)
     
-    myData <- list(series = SAX.str)
+    myData <- list(series = gsub("NULL", "-", SAX.str))
     myData <- lapply(myData, as.character)
     myData$nominal <- NA
     myData$dataMatrix <- myMatrix
