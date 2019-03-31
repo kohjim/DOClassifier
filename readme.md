@@ -56,7 +56,6 @@ Muraoka, K., Hanson, P., Frank, E., Jiang, M., Chiu, K., Hamilton, D., 2018. A d
 
 Muraoka, K., Hanson, P., Frank, E., Jiang, M., Chiu, K., Hamilton, D
 
-kohji.muraoka-gmail-com
 
 ## License
 
