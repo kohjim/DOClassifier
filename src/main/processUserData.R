@@ -6,6 +6,7 @@ processUserData <-
     library(reshape)
     library(RWeka)
     library(rJava)
+    library(data.table)
     
     ## RWeka package check "ordinalClassClassifier"
     tryCatch({

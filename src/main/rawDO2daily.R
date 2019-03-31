@@ -1,73 +1,94 @@
 rawDO2daily <- function(doobsFile){
+  # this use data.table - not yet configured in the server
   # Import doobs file
-  # DF.toss <- read.table("mendota.doobs",header=TRUE, sep="\t")
+
+  Sys.setenv(tz = 'UTC')
+  
   DF.toss <- tryCatch({
     read.table(doobsFile$datapath,header=TRUE, sep="\t")
   },
   error = function(e) {
     read.table(doobsFile,header=TRUE, sep="\t")
   })
-   
-   colnames(DF.toss)[1] <- "DateTime"
-   colnames(DF.toss)[2] <- "doobs"
-
+  
+  colnames(DF.toss)[1] <- "DateTime"
+  colnames(DF.toss)[2] <- "doobs"
+  
   DF <- DF.toss[,1:2]
   DF <- DF[!duplicated(DF$DateTime),]
   DF$DateTime <- strptime(DF$DateTime,"%Y-%m-%d %H:%M",tz='UTC')
-  DF$julian<- julian(DF$DateTime)
+  DF$julian <- julian(DF$DateTime)
   
-  ts.floor <- as.numeric(floor(DF$julian[1]))
-  ts.ceil <- as.numeric(ceiling(DF$julian[length(DF$julian)]))
+  DF$floorToDay <- as.POSIXct(
+    as.numeric(lapply(as.numeric(as.POSIXct(DF$DateTime))/60/60/24, floor))*60*60*24,
+    origin = '1970-01-01 00:00:00 UTC'
+  )
   
-  # new time index
-  new.DateTime <- seq(as.Date(ts.floor,origin=as.Date("1970-01-01")), 
-                    as.Date(ts.ceil,origin=as.Date("1970-01-01")),
-                    by=as.difftime(30,units='mins'),
-                    format = "%Y-%m-%d %H:%M")
+  DF$floorTo30min <- as.POSIXct(
+    as.numeric(lapply(as.numeric(as.POSIXct(DF$DateTime))/60/30, floor))*60*30,
+    origin = '1970-01-01 00:00:00 UTC'
+  )
   
-  new.Dates <- seq(as.Date(ts.floor,origin=as.Date("1970-01-01")), 
-                      as.Date(ts.ceil,origin=as.Date("1970-01-01")),
-                      by=as.difftime(1,units='days'),
-                      format = "%Y-%m-%d")
   
-  new.julian <- julian(new.DateTime)
-  new.julian.floor <- as.numeric(floor(new.julian))
-  new.julian.frac <- new.julian - new.julian.floor
-  # DF.merge <- merge(DF, ts.new, all = TRUE, by = DF$DateTime)
+  # aggregate into 30 min using data.table
+  DT <- data.table(
+    as.data.frame(
+      c(as.data.frame(DF$doobs),as.data.frame(DF$floorTo30min))
+    )
+  )
+  colnames(DT) <- c("doobs","floorTo30min")
   
-  # package check "stats"
-#   usePackage <- function(stats) {
-#     if (!is.element(stats, installed.packages()[,1]))
-#       install.packages("stats", dep = TRUE)
-#     install("stats", character.only = TRUE)
-#   }
-  library(stats)
+  DF.floorTo30min <- as.data.frame(
+    DT[,
+       list(doobs = mean(doobs, na.rm = TRUE)),
+       by = list(floorTo30min)]
+    )
+  colnames(DF.floorTo30min)[1] <- "Dates"
   
-  # package check "reshape"
-  usePackage <- function(reshape) {
-    if (!is.element(reshape, installed.packages()[,1]))
-      install.packages("reshape", dep = TRUE)
-    install("reshape", character.only = TRUE)
-  }
-  library(reshape)
+  ### from here new
+  # browser()
+  ## for every dates make 0:00 to 24:00 30 min sequence
+  library(data.table)
   
-  new.approx <- approxfun(DF$julian,DF$doobs,method="linear")
-  new.Data <- new.approx(new.julian)
+  # make new dates array with no time information
+  ts.floor <- as.numeric(lapply(as.numeric(as.POSIXct(DF$DateTime))/60/60/24, floor))*60*60*24 # or use DF$floor
+  ts.uniqueDates <- unlist(unique(ts.floor))
   
-  DF.new <- data.frame(new.julian.floor,
-                 new.julian.frac,
-                 new.Data)
-
-  # make non-existance data as NA
-  ismemberInd <- is.element(new.julian.floor+new.julian.frac, DF$julian)
-  DF.new$new.Data[!ismemberInd] <- NA
+  # make new time array with no dates information
+  ts.time <- as.numeric(seq(from = 0, to = 24, by = 0.5))*60*60
   
-  # reshape the data
-  DF.new.reshaped <- cast(DF.new,new.julian.floor ~ new.julian.frac)
-  DF.new.reshaped$'1' <- 
-    c(DF.new.reshaped$`0`[2:length(DF.new.reshaped$new.julian.floor)],NA)
-  DF.matrix <- data.matrix(DF.new.reshaped[2:50])
-  #   myAns <- as.data.frame(new.Dates)
-  #   myAns$matrix <- as.data.frame(DF.matrix)
-  return(list(Dates <- new.Dates, DF.matrix <- DF.matrix))
+  # new time sequence in matrix
+  ts.datetimemat <-
+    matrix(rep(ts.uniqueDates, length(ts.time)) , ncol = length(ts.uniqueDates) , byrow = TRUE) + # unique dates matrix
+    t(matrix(rep(ts.time, length(ts.uniqueDates)) , ncol = length(ts.time) , byrow = TRUE)) # unique time matrix
+  
+  # new time sequence in vector
+  ts.datetimevec <- matrix(
+    ts.datetimemat,
+    nrow=ncol(ts.datetimemat)*nrow(ts.datetimemat),
+    byrow=T)
+  
+  # new time sequence in POSIXct format in vector
+  ts.new <- as.data.frame(as.POSIXct(ts.datetimevec, origin = '1970-01-01 00:00.00 UTC'))
+  colnames(ts.new) = "Dates"
+  
+  # assign all data into the new sequence
+  newDF <- merge(
+    x = ts.new,
+    y = DF.floorTo30min,
+    by = "Dates",
+    all = TRUE
+  )
+  
+  # vector to matrix
+  newMat <-     # transpose so that col = time
+    as.data.frame(
+      t(
+        matrix(newDF$doobs,
+               nrow = length(ts.time))
+      )
+    )
+  
+  # return
+  return(list(Dates <- ts.uniqueDates, DF.matrix <- newMat))
 }
